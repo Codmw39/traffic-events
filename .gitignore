@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+.vscode/
+samples/
+cache/
+*.mp4
+*.MP4
+*.pt
+!weights/*.pt
+tracks*.csv
+tracks*.mp4
+*.jpg
