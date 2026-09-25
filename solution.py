@@ -9,6 +9,7 @@ import numpy as np
 from src.rules_stopped import stopped_vehicle_events
 from src.tracking import get_tracks
 from src.rules_jaywalking import jaywalking_events
+from src.rules_yield import failure_to_yield_events
 
 CLASSES: list[str] = [
     "accident", "near_miss", "red_light", "wrong_way", "illegal_u_turn",
@@ -30,6 +31,7 @@ def detect_events(video_path: str) -> list[list]:
     events = []
     events += stopped_vehicle_events(tracks_csv, ZONES, duration)
     events += jaywalking_events(tracks_csv, ZONES, duration)
+    events += failure_to_yield_events(tracks_csv, ZONES, duration)
     return events
 
 
