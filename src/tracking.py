@@ -15,7 +15,7 @@ WIDTH = 1920                    # shrink frames to this width before detection
 IMG_SIZE = 1280                 # detector input size
 CONF = 0.25
 KEEP = [0, 1, 2, 3, 5, 7, 9]    # person, bicycle, car, motorcycle, bus, truck, traffic light
-TIME_LIMIT_FACTOR = 1.0         # stop tracking after this many x the video duration
+TIME_LIMIT_FACTOR = 2.0         # stop tracking after this many x the video duration       # stop tracking after this many x the video duration
 HEADER = ["frame", "t_sec", "track_id", "class", "x1", "y1", "x2", "y2"]
 
 
