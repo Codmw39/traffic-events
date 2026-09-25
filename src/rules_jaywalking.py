@@ -11,7 +11,8 @@ import numpy as np
 MIN_SEC = 1.5              # on the road, outside crosswalks, at least this long
 MAX_GAP = 1.0               # ignore detector flicker shorter than this
 CROSSWALK_MARGIN = 40       # px: this close to a crosswalk counts as "on the crosswalk"
-MIN_MOVEMENT_PX = 60        # must move at least this many px during the stretch
+MIN_MOVEMENT_PX = 60  
+ROAD_MARGIN = 40            # must be at least this far inside the road, not just past the edge      # must move at least this many px during the stretch
                             # (a real person crossing moves; a false detection on a
                             # static object like a pole or sign does not)
 
@@ -27,7 +28,7 @@ def jaywalking_events(csv_path, zones_path="zones.json", duration=None):
     road, cross = _load_zones(zones_path)
 
     def in_road(x, y):
-        return any(cv2.pointPolygonTest(p, (float(x), float(y)), False) >= 0 for p in road)
+        return any(cv2.pointPolygonTest(p, (float(x), float(y)), True) >= ROAD_MARGIN for p in road)
 
     def near_crosswalk(x, y):
         return any(cv2.pointPolygonTest(p, (float(x), float(y)), True) >= -CROSSWALK_MARGIN
