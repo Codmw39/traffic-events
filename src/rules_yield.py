@@ -1,15 +1,19 @@
-"""failure_to_yield: a vehicle is inside a crosswalk polygon while a pedestrian
-is on it (or entering it) at the same time."""
+"""failure_to_yield: a MOVING vehicle drives across a crosswalk polygon while a
+pedestrian is on it (or entering it). A vehicle just queued/stopped near the
+crossing (e.g. waiting at a red light while pedestrians cross) is not this event."""
 import csv
 import json
 from collections import defaultdict
+from math import hypot
 
 import cv2
 import numpy as np
 
 VEHICLES = {"car", "truck", "bus", "motorcycle"}
-CROSSWALK_MARGIN = 20     # px: count as "on the crosswalk" if this close to it too
-MIN_SEC = 0.5             # ignore single-frame flickers
+CROSSWALK_MARGIN = 0        # px tolerance around the painted crosswalk polygon
+MIN_SEC = 0.5                # ignore single-frame flickers
+MIN_VEHICLE_MOVEMENT_PX = 150  # total distance the vehicle must travel during the
+                               # overlap to count as "driving through" (not queued/stopped)
 
 
 def _load_zones(zones_path):
@@ -25,7 +29,6 @@ def failure_to_yield_events(csv_path, zones_path="zones.json", duration=None):
         return any(cv2.pointPolygonTest(p, (float(x), float(y)), True) >= -CROSSWALK_MARGIN
                    for p in cross)
 
-    # positions per second, per track
     by_track = defaultdict(dict)
     kind = {}
     with open(csv_path) as f:
@@ -37,7 +40,6 @@ def failure_to_yield_events(csv_path, zones_path="zones.json", duration=None):
             by_track[tid][round(float(row["t_sec"]), 1)] = ((x1 + x2) / 2, y2)
             kind[tid] = row["class"]
 
-    # seconds when at least one pedestrian is on a crosswalk
     ped_times = set()
     for tid, pts in by_track.items():
         if kind[tid] != "person":
@@ -46,25 +48,21 @@ def failure_to_yield_events(csv_path, zones_path="zones.json", duration=None):
             if on_crosswalk(x, y):
                 ped_times.add(t)
 
-    # vehicle stretches on a crosswalk while a pedestrian is also on it
     events = []
     for tid, pts in by_track.items():
         if kind[tid] not in VEHICLES:
             continue
-        run = None
+        run = None      # (start_t, end_t, [positions])
         for t in sorted(pts):
             x, y = pts[t]
             active = on_crosswalk(x, y) and t in ped_times
             if active:
-                run = (run[0], t) if run else (t, t)
+                run = (run[0], t, run[2] + [(x, y)]) if run else (t, t, [(x, y)])
             elif run:
-                if run[1] - run[0] >= MIN_SEC:
-                    end = min(run[1], duration) if duration else run[1]
-                    events.append([run[0], end, "failure_to_yield"])
+                _flush(run, duration, events)
                 run = None
-        if run and run[1] - run[0] >= MIN_SEC:
-            end = min(run[1], duration) if duration else run[1]
-            events.append([run[0], end, "failure_to_yield"])
+        if run:
+            _flush(run, duration, events)
 
     events.sort()
     merged = []
@@ -74,6 +72,19 @@ def failure_to_yield_events(csv_path, zones_path="zones.json", duration=None):
         else:
             merged.append([s, e, label])
     return merged
+
+
+def _flush(run, duration, events):
+    start, end, positions = run
+    if end - start < MIN_SEC:
+        return
+    xs = [p[0] for p in positions]
+    ys = [p[1] for p in positions]
+    moved = hypot(max(xs) - min(xs), max(ys) - min(ys))
+    if moved < MIN_VEHICLE_MOVEMENT_PX:
+        return              # queued/stopped near the crossing, not driving through
+    e = min(end, duration) if duration else end
+    events.append([start, e, "failure_to_yield"])
 
 
 if __name__ == "__main__":
