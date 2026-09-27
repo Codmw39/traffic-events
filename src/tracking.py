@@ -1,11 +1,16 @@
 """Video -> tracks. Runs the detector + tracker once and caches the result as a csv."""
 import csv
 import os
+import random
 import tempfile
 import time
 from pathlib import Path
 
 import cv2
+import numpy as np
+
+random.seed(0)
+np.random.seed(0)
 
 HERE = Path(__file__).resolve().parent.parent
 WEIGHTS = HERE / "weights" / "yolov8s.pt"
@@ -15,7 +20,7 @@ WIDTH = 1920                    # shrink frames to this width before detection
 IMG_SIZE = 1280                 # detector input size
 CONF = 0.25
 KEEP = [0, 1, 2, 3, 5, 7, 9]    # person, bicycle, car, motorcycle, bus, truck, traffic light
-TIME_LIMIT_FACTOR = 2.0         # stop tracking after this many x the video duration       # stop tracking after this many x the video duration
+TIME_LIMIT_FACTOR = 2.0         # stop tracking after this many x the video duration
 HEADER = ["frame", "t_sec", "track_id", "class", "x1", "y1", "x2", "y2"]
 
 
@@ -39,6 +44,8 @@ def get_tracks(video_path):
 
 
 def _extract(video_path, part_path):
+    import torch
+    torch.manual_seed(0)
     from ultralytics import YOLO      # imported here so the cached path works without it
 
     cap = cv2.VideoCapture(str(video_path))

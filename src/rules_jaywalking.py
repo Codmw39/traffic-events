@@ -1,5 +1,6 @@
-"""jaywalking rule: pedestrian on the road, outside every crosswalk, for a while,
-and actually moving (not a static false detection like a pole or a sign)."""
+"""jaywalking: pedestrian on the carriageway, outside every crosswalk, for a
+while, and actually moving (a static false detection on a pole/sign is not a
+pedestrian; it never moves)."""
 import csv
 import json
 from collections import defaultdict
@@ -8,13 +9,11 @@ from math import hypot
 import cv2
 import numpy as np
 
-MIN_SEC = 1.5              # on the road, outside crosswalks, at least this long
-MAX_GAP = 1.0               # ignore detector flicker shorter than this
-CROSSWALK_MARGIN = 40       # px: this close to a crosswalk counts as "on the crosswalk"
-MIN_MOVEMENT_PX = 60  
-ROAD_MARGIN = 40            # must be at least this far inside the road, not just past the edge      # must move at least this many px during the stretch
-                            # (a real person crossing moves; a false detection on a
-                            # static object like a pole or sign does not)
+MIN_SEC = 1.5
+MAX_GAP = 1.0
+CROSSWALK_MARGIN = 40
+MIN_MOVEMENT_PX = 60
+ROAD_MARGIN = 40    # must be at least this far inside the road, not just past the edge
 
 
 def _load_zones(zones_path):
@@ -67,7 +66,7 @@ def jaywalking_events(csv_path, zones_path="zones.json", duration=None):
             ys = [p[2] for p in r]
             moved = hypot(max(xs) - min(xs), max(ys) - min(ys))
             if moved < MIN_MOVEMENT_PX:
-                continue          # likely a static false detection, not a real pedestrian
+                continue
             end = min(t1, duration) if duration else t1
             events.append([round(t0, 2), round(end, 2), "jaywalking"])
 
@@ -79,13 +78,3 @@ def jaywalking_events(csv_path, zones_path="zones.json", duration=None):
         else:
             merged.append([s, e, label])
     return merged
-
-
-if __name__ == "__main__":
-    cap = cv2.VideoCapture("samples/C3905.MP4")
-    duration = cap.get(cv2.CAP_PROP_FRAME_COUNT) / cap.get(cv2.CAP_PROP_FPS)
-    cap.release()
-    for s, e, label in jaywalking_events("tracks_full.csv", "zones.json", duration):
-        m0, s0 = divmod(int(s), 60)
-        m1, s1 = divmod(int(e), 60)
-        print(f"{m0}:{s0:02d} - {m1}:{s1:02d}  {label}  ({e - s:.1f}s)")

@@ -10,10 +10,9 @@ import cv2
 import numpy as np
 
 VEHICLES = {"car", "truck", "bus", "motorcycle"}
-CROSSWALK_MARGIN = 0        # px tolerance around the painted crosswalk polygon
-MIN_SEC = 0.5                # ignore single-frame flickers
-MIN_VEHICLE_MOVEMENT_PX = 150  # total distance the vehicle must travel during the
-                               # overlap to count as "driving through" (not queued/stopped)
+CROSSWALK_MARGIN = 0
+MIN_SEC = 0.5
+MIN_VEHICLE_MOVEMENT_PX = 150
 
 
 def _load_zones(zones_path):
@@ -52,7 +51,7 @@ def failure_to_yield_events(csv_path, zones_path="zones.json", duration=None):
     for tid, pts in by_track.items():
         if kind[tid] not in VEHICLES:
             continue
-        run = None      # (start_t, end_t, [positions])
+        run = None
         for t in sorted(pts):
             x, y = pts[t]
             active = on_crosswalk(x, y) and t in ped_times
@@ -82,16 +81,6 @@ def _flush(run, duration, events):
     ys = [p[1] for p in positions]
     moved = hypot(max(xs) - min(xs), max(ys) - min(ys))
     if moved < MIN_VEHICLE_MOVEMENT_PX:
-        return              # queued/stopped near the crossing, not driving through
+        return
     e = min(end, duration) if duration else end
     events.append([start, e, "failure_to_yield"])
-
-
-if __name__ == "__main__":
-    cap = cv2.VideoCapture("samples/C3905.MP4")
-    duration = cap.get(cv2.CAP_PROP_FRAME_COUNT) / cap.get(cv2.CAP_PROP_FPS)
-    cap.release()
-    for s, e, label in failure_to_yield_events("tracks_full.csv", "zones.json", duration):
-        m0, s0 = divmod(int(s), 60)
-        m1, s1 = divmod(int(e), 60)
-        print(f"{m0}:{s0:02d} - {m1}:{s1:02d}  {label}  ({e - s:.1f}s)")
