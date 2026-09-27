@@ -88,11 +88,7 @@ constant across all sample and test videos.
 availability (Ultralytics auto-selects); results may vary by a small amount
 of floating-point noise across hardware, as allowed by the rules.
 
-## Team
 
-- [Name 1] — Part A pipeline, tracking, rules, Part B risk estimator
-- [Name 2] — labeling / dev set, evaluation, zone drawing
-- [Name 3] — website, EDA, live demo
 
 ## Known limitations / honest failure cases
 
