@@ -2,6 +2,15 @@
 
 ## How to install and run
 
+## Team
+
+- [Kayrullaev Islambek] — Part A pipeline, tracking, rules, Part B risk estimator, captain
+- [Ibragimov Farrux] — labeling / dev set, evaluation, zone drawing
+- [Dilshod Xodjanov] — website, EDA, live demo
+
+
+
+
 ```bash
 python -m venv venv
 # Windows: venv\Scripts\activate      Mac/Linux: source venv/bin/activate
